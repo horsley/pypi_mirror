@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -22,9 +23,7 @@ const (
 )
 
 func main() {
-	//fmt.Printf("%#v\n", strings.Split("http://pypi.douban.com", "/"))
-	//fmt.Printf("%#v\n", strings.Join([]string{"http:", "", "pypi.douban.com"}, "/"))
-	//fmt.Println(url_join("http://123.4/d/d", "a/bc/d", "../../e"))
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	mirror()
 }
 
@@ -34,6 +33,10 @@ func mirror() {
 	links, _ := GetLinks(UPSTREAM+PAGEIDX, SAVEPATH+PAGEIDX+"/index.html")
 
 	for _, p := range links {
+		fmt.Println("\n" + strings.Repeat("=", 50))
+		fmt.Println(" Package: " + p.Name)
+		fmt.Println(strings.Repeat("=", 50))
+
 		//下载包索引页，并提取包各版本文件链接
 		pLinks, _ := GetLinks(p.FullUrl, SAVEPATH+PAGEIDX+"/"+p.Name+"/index.html")
 		//下载包签名证书
@@ -48,10 +51,16 @@ func mirror() {
 				continue
 			}
 			dir := strings.Split(url[0], PAGEPKG)
-			FetchAndSave(url[0], dir[1], false)
+			if len(dir) == 1 {
+				//有些包里面索引页会有包主页链接什么的 如http://e.pypi.python.org/simple/1ee/这里面
+				//这时候跳过这个链接
+				continue
+			}
+			s, _ := FetchAndSave(url[0], dir[1], false)
 			//fmt.Printf("%#v\n", dir)
-			fmt.Println(pkgFile.Name)
+			fmt.Println(pkgFile.Name, "["+s+"]")
 			//@todo: md5 check
+
 		}
 	}
 }
