@@ -28,13 +28,16 @@ func main() {
 }
 
 func mirror() {
+	var total, count int
 	buildDir()
 	//下载总索引并提取各个包索引页链接
 	links, _ := GetLinks(UPSTREAM+PAGEIDX, SAVEPATH+PAGEIDX+"/index.html")
+	total = len(links)
 
 	for _, p := range links {
+		count++
 		fmt.Println("\n" + strings.Repeat("=", 50))
-		fmt.Println(" Package: " + p.Name)
+		fmt.Println(" Package: "+p.Name, "[", count, "/", total, "]")
 		fmt.Println(strings.Repeat("=", 50))
 
 		//下载包索引页，并提取包各版本文件链接
