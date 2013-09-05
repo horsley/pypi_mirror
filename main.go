@@ -63,6 +63,7 @@ func mirror() (err error) {
 			}
 			for ; i < n; i++ {
 				var statusOut [2]string
+				var count [4]int //记录一个包的文件总数、下载文件数、跳过文件数、错误文件数
 
 				statusOut[0] = links[i].Name
 				//下载包索引页，并提取包各版本文件链接
@@ -93,6 +94,8 @@ func mirror() (err error) {
 						//这时候跳过这个链接
 						continue
 					}
+					count[0]++
+
 					for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
 						if s, err = FetchAndSave(url[0], SAVEPATH+PAGEPKG+dir[1], false); err == nil {
 							break
@@ -102,11 +105,18 @@ func mirror() (err error) {
 					if err != nil {
 						errLog = append(errLog, time.Now().String()+" fetch package error: "+url[0])
 					}
-					statusOut[1] = statusOut[1] + pkgFile.Name + " [" + s + "]\n"
-
+					switch s {
+					case "ok":
+						count[1]++
+					case "skip":
+						count[2]++
+					case "fail":
+						count[3]++
+					}
 					//@todo: md5 check
 					runtime.Gosched()
 				}
+				statusOut[1] = fmt.Sprintf("total:%3d ok:%3d skip:%3d fail:%3d", count[0], count[1], count[2], count[3])
 
 				finish <- statusOut
 				runtime.Gosched()
@@ -117,10 +127,9 @@ func mirror() (err error) {
 	for i := 0; i < total; i++ {
 		statusOut := <-finish
 		count++
-		fmt.Println(strings.Repeat("=", 50))
-		fmt.Println(" Package: "+statusOut[0], "[", count, "/", total, "]")
-		fmt.Println(strings.Repeat("=", 50))
-		fmt.Println(statusOut[1])
+		fmt.Println(strings.Repeat("=", 80))
+		fmt.Printf("[%6d/%-6d] Package: %s\n", count, total, statusOut[0])
+		fmt.Println(statusOut[1] + "\n")
 	}
 
 	fmt.Println("Finish!")
