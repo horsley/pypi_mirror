@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -11,6 +12,9 @@ import (
 )
 
 var linkRe = regexp.MustCompile(`(?m)<a.+?href=['"](.+?)['"].*?>(.+?)</a>`)
+
+const MAX_ERR_RETRY = 5
+const RETRY_INTERVAL = 500 * time.Millisecond
 
 type Link struct {
 	Name,
@@ -30,6 +34,37 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 	var out *os.File
 	var fileinfo os.FileInfo
 	var resp *http.Response
+	var err_retry int
+
+	defer func() { //失败重试机制
+		panic_err := recover()
+		if panic_err != nil {
+			if panic_err == "[HEAD ERR]" {
+				err_retry++
+				if err_retry < MAX_ERR_RETRY { //retry
+					time.Sleep(RETRY_INTERVAL)
+					if resp, err = http.Get(url); err != nil {
+						panic("[HEAD ERR]")
+					}
+				} else {
+					panic("[HEAD ERR] Retry " + fmt.Sprintf("%v", MAX_ERR_RETRY) + " times, all failed!")
+				}
+			} else if panic_err == "[GET ERR]" {
+				err_retry++
+				if err_retry < MAX_ERR_RETRY { //retry
+					time.Sleep(RETRY_INTERVAL)
+					if resp, err = http.Get(url); err != nil {
+						panic("[GET ERR]")
+					}
+				} else {
+					panic("[GET ERR] Retry" + fmt.Sprintf("%v", MAX_ERR_RETRY) + "times, all failed!")
+				}
+
+			} else {
+				panic(panic_err)
+			}
+		}
+	}()
 
 	fileinfo, err = os.Stat(to)
 	if err != nil {
@@ -42,7 +77,7 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 	} else {
 		if !force { //如果不是强制重新下载，则检验修改时间
 			if resp, err = http.Head(url); err != nil {
-				panic(err)
+				panic("[HEAD ERR]")
 			}
 
 			last_mod, _ := time.Parse(time.RFC1123, resp.Header.Get("Last-Modified"))
@@ -60,7 +95,7 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 	defer out.Close()
 
 	if resp, err = http.Get(url); err != nil {
-		panic(err)
+		panic("[GET ERR]")
 	}
 	defer resp.Body.Close()
 
