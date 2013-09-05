@@ -59,7 +59,7 @@ func mirror() {
 				//这时候跳过这个链接
 				continue
 			}
-			s, _ := FetchAndSave(url[0], dir[1], false)
+			s, _ := FetchAndSave(url[0], SAVEPATH+PAGEPKG+dir[1], false)
 			//fmt.Printf("%#v\n", dir)
 			fmt.Println(pkgFile.Name, "["+s+"]")
 			//@todo: md5 check
