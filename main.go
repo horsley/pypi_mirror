@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	UPSTREAM = "http://e.pypi.python.org" //上级Pypi源
-	SAVEPATH = "/data/opensources/pypi"   //本地存放目录
+	UPSTREAM = "http://pypi.gocept.com" //上级Pypi源
+	SAVEPATH = "/data/opensources/pypi" //本地存放目录
 	//SAVEPATH = "./test"
 
 	PAGEIDX = "/simple"
 	PAGEPKG = "/packages"
 	PAGESIG = "/serversig"
 
-	NUM_GOROUTINE = 50
+	NUM_GOROUTINE = 500
 	VERIFY_MD5    = true
 )
 
