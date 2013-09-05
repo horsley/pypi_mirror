@@ -75,7 +75,7 @@ func mirror() {
 			}
 		}(finish, i*total/NUM_GOROUTINE, (i+1)*total/NUM_GOROUTINE)
 	}
-
+	fmt.Println("Start", runtime.NumGoroutine(), "worker goroutine finish, wait for the result...")
 	for i := 0; i < total; i++ {
 		statusOut := <-finish
 		count++

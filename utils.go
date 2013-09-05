@@ -35,41 +35,6 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 	var resp *http.Response
 	var err_retry int
 
-	defer func() { //失败重试机制
-		panic_err := recover()
-		if panic_err != nil {
-			if panic_err == "[HEAD ERR]" {
-				for ; err_retry < MAX_ERR_RETRY; err_retry++ {
-					time.Sleep(RETRY_INTERVAL)
-					if resp, err = http.Get(url); err == nil { //没有出错则跳出重试过程
-						continue
-					}
-				}
-				if err != nil {
-					//panic("[HEAD ERR] Retry " + fmt.Sprintf("%v", MAX_ERR_RETRY) + " times, all failed!")
-					status = "fail"
-					return
-				}
-
-			} else if panic_err == "[GET ERR]" {
-				for ; err_retry < MAX_ERR_RETRY; err_retry++ {
-					time.Sleep(RETRY_INTERVAL)
-					if resp, err = http.Get(url); err == nil { //没有出错则跳出重试过程
-						continue
-					}
-				}
-				if err != nil {
-					//panic("[GET ERR] Retry" + fmt.Sprintf("%v", MAX_ERR_RETRY) + "times, all failed!")
-					status = "fail"
-					return
-				}
-
-			} else {
-				panic(panic_err)
-			}
-		}
-	}()
-
 	fileinfo, err = os.Stat(to)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -80,9 +45,17 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 
 	} else {
 		if !force { //如果不是强制重新下载，则检验修改时间
-			if resp, err = http.Head(url); err != nil {
-				panic("[HEAD ERR]")
+			for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
+				if resp, err = http.Head(url); err == nil { //没有出错则跳出重试过程
+					continue
+				}
+				time.Sleep(RETRY_INTERVAL)
 			}
+			if err != nil {
+				status = "fail"
+				return
+			}
+			defer resp.Body.Close()
 
 			last_mod, _ := time.Parse(time.RFC1123, resp.Header.Get("Last-Modified"))
 			if fileinfo.ModTime().After(last_mod) {
@@ -98,8 +71,15 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 	}
 	defer out.Close()
 
-	if resp, err = http.Get(url); err != nil {
-		panic("[GET ERR]")
+	for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
+		if resp, err = http.Get(url); err == nil {
+			continue
+		}
+		time.Sleep(RETRY_INTERVAL)
+	}
+	if err != nil {
+		status = "fail"
+		return
 	}
 	defer resp.Body.Close()
 
