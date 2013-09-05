@@ -7,11 +7,13 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 )
 
 const (
 	UPSTREAM = "http://pypi.gocept.com" //上级Pypi源
 	SAVEPATH = "/data/opensources/pypi" //本地存放目录
+	ERRORLOG = "error.log"
 	//SAVEPATH = "./test"
 
 	PAGEIDX = "/simple"
@@ -20,6 +22,9 @@ const (
 
 	NUM_GOROUTINE = 500
 	VERIFY_MD5    = true
+
+	MAX_ERR_RETRY  = 5
+	RETRY_INTERVAL = 500 * time.Millisecond
 )
 
 func main() {
@@ -27,8 +32,16 @@ func main() {
 	mirror()
 }
 
-func mirror() {
+func mirror() (err error) {
+	var s string
 	var total, count int
+
+	errLog := make([]string, 0)
+	defer func() {
+		if len(errLog) != 0 { //写错误日志
+			ioutil.WriteFile(ERRORLOG, []byte(strings.Join(errLog, "\n")), 0700)
+		}
+	}()
 
 	fmt.Println("Building necessary directory structure...")
 	buildDir()
@@ -36,6 +49,7 @@ func mirror() {
 	//下载总索引并提取各个包索引页链接
 	fmt.Println("Downloading the main index...")
 	links, _ := GetLinks(UPSTREAM+PAGEIDX, SAVEPATH+PAGEIDX+"/index.html")
+
 	total = len(links)
 	fmt.Println("Parse main index finished, total packages:", total)
 
@@ -43,6 +57,7 @@ func mirror() {
 	finish := make(chan [2]string, total)
 	for i := 0; i < NUM_GOROUTINE; i++ {
 		go func(finish chan [2]string, i, n int) {
+			var err_retry int
 			if n > total { //防止最后一次下标越界
 				n = total
 			}
@@ -51,9 +66,23 @@ func mirror() {
 
 				statusOut[0] = links[i].Name
 				//下载包索引页，并提取包各版本文件链接
-				pLinks, _ := GetLinks(links[i].FullUrl, SAVEPATH+PAGEIDX+"/"+links[i].Name+"/index.html")
+				pLinks, err := GetLinks(links[i].FullUrl, SAVEPATH+PAGEIDX+"/"+links[i].Name+"/index.html")
+				if err != nil {
+					errLog = append(errLog, time.Now().String()+" fetch index error: "+links[i].FullUrl)
+					break
+				}
+
 				//下载包签名证书
-				FetchAndSave(UPSTREAM+PAGESIG+"/"+links[i].Name, SAVEPATH+PAGESIG+"/"+links[i].Name, false)
+				for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
+					if s, err = FetchAndSave(UPSTREAM+PAGESIG+"/"+links[i].Name, SAVEPATH+PAGESIG+"/"+links[i].Name, false); err == nil {
+						break
+					}
+					time.Sleep(RETRY_INTERVAL)
+				}
+				if err != nil {
+					errLog = append(errLog, time.Now().String()+" fetch signature error: "+UPSTREAM+PAGESIG+"/"+links[i].Name)
+					break
+				}
 
 				//下载包的所有版本并校验
 				for _, pkgFile := range pLinks {
@@ -64,7 +93,15 @@ func mirror() {
 						//这时候跳过这个链接
 						continue
 					}
-					s, _ := FetchAndSave(url[0], SAVEPATH+PAGEPKG+dir[1], false)
+					for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
+						if s, err = FetchAndSave(url[0], SAVEPATH+PAGEPKG+dir[1], false); err == nil {
+							break
+						}
+						time.Sleep(RETRY_INTERVAL)
+					}
+					if err != nil {
+						errLog = append(errLog, time.Now().String()+" fetch package error: "+url[0])
+					}
 					statusOut[1] = statusOut[1] + pkgFile.Name + " [" + s + "]\n"
 
 					//@todo: md5 check
@@ -87,6 +124,7 @@ func mirror() {
 	}
 
 	fmt.Println("Finish!")
+	return
 }
 
 func buildDir() {
@@ -97,7 +135,17 @@ func buildDir() {
 
 func GetLinks(url, save string) (ret []Link, err error) {
 	var tmp []byte
-	FetchAndSave(url, save, false)
+	var err_retry int
+
+	for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ { //错误重试
+		if _, err = FetchAndSave(url, save, false); err == nil {
+			break
+		}
+		time.Sleep(RETRY_INTERVAL)
+	}
+	if err != nil {
+		return
+	}
 
 	if tmp, err = ioutil.ReadFile(save); err != nil {
 		panic(err)

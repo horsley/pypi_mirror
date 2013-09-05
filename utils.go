@@ -12,9 +12,6 @@ import (
 
 var linkRe = regexp.MustCompile(`(?m)<a.+?href=['"](.+?)['"].*?>(.+?)</a>`)
 
-const MAX_ERR_RETRY = 5
-const RETRY_INTERVAL = 500 * time.Millisecond
-
 type Link struct {
 	Name,
 	FullUrl,
@@ -88,7 +85,8 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 		return
 	}
 	if _, err = io.Copy(out, resp.Body); err != nil {
-		panic(err)
+		status = "fail"
+		return
 	}
 	status = "ok"
 	return
