@@ -40,23 +40,25 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 		panic_err := recover()
 		if panic_err != nil {
 			if panic_err == "[HEAD ERR]" {
-				err_retry++
-				if err_retry < MAX_ERR_RETRY { //retry
+
+				for ; err_retry < MAX_ERR_RETRY; err_retry++ {
 					time.Sleep(RETRY_INTERVAL)
-					if resp, err = http.Get(url); err != nil {
-						panic("[HEAD ERR]")
+					if resp, err = http.Get(url); err == nil { //没有出错则跳出重试过程
+						continue
 					}
-				} else {
+				}
+				if err != nil {
 					panic("[HEAD ERR] Retry " + fmt.Sprintf("%v", MAX_ERR_RETRY) + " times, all failed!")
 				}
+
 			} else if panic_err == "[GET ERR]" {
-				err_retry++
-				if err_retry < MAX_ERR_RETRY { //retry
+				for ; err_retry < MAX_ERR_RETRY; err_retry++ {
 					time.Sleep(RETRY_INTERVAL)
-					if resp, err = http.Get(url); err != nil {
-						panic("[GET ERR]")
+					if resp, err = http.Get(url); err == nil { //没有出错则跳出重试过程
+						continue
 					}
-				} else {
+				}
+				if err != nil {
 					panic("[GET ERR] Retry" + fmt.Sprintf("%v", MAX_ERR_RETRY) + "times, all failed!")
 				}
 
