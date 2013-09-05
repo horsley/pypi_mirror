@@ -16,9 +16,10 @@ const (
 	ERRORLOG = "error.log"
 	//SAVEPATH = "./test"
 
-	PAGEIDX = "/simple"
-	PAGEPKG = "/packages"
-	PAGESIG = "/serversig"
+	PAGEIDX       = "/simple"
+	PAGEIDX_SHARD = "/simple_shard"
+	PAGEPKG       = "/packages"
+	PAGESIG       = "/serversig"
 
 	NUM_GOROUTINE = 500
 	VERIFY_MD5    = true
@@ -66,8 +67,17 @@ func mirror() (err error) {
 				var count [4]int //记录一个包的文件总数、下载文件数、跳过文件数、错误文件数
 
 				statusOut[0] = links[i].Name
+
 				//下载包索引页，并提取包各版本文件链接
-				pLinks, err := GetLinks(links[i].FullUrl, SAVEPATH+PAGEIDX+"/"+links[i].Name+"/index.html")
+				//fix ext3 32k sub-dir problem by softlink
+				realPath := SAVEPATH + PAGEIDX_SHARD + "/" + strings.ToLower(links[i].Name[:1]) + "/" + links[i].Name
+				fakePath := SAVEPATH + PAGEIDX + "/" + links[i].Name
+				pLinks, err := GetLinks(links[i].FullUrl, realPath+"/index.html")
+				if r, err := os.Readlink(fakePath); err != nil || r != realPath {
+					os.Remove(fakePath)
+					os.Symlink(realPath, fakePath)
+				}
+
 				if err != nil {
 					errLog = append(errLog, time.Now().String()+" fetch index error: "+links[i].FullUrl)
 					break
