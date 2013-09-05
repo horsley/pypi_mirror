@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -40,7 +39,6 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 		panic_err := recover()
 		if panic_err != nil {
 			if panic_err == "[HEAD ERR]" {
-
 				for ; err_retry < MAX_ERR_RETRY; err_retry++ {
 					time.Sleep(RETRY_INTERVAL)
 					if resp, err = http.Get(url); err == nil { //没有出错则跳出重试过程
@@ -48,7 +46,9 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 					}
 				}
 				if err != nil {
-					panic("[HEAD ERR] Retry " + fmt.Sprintf("%v", MAX_ERR_RETRY) + " times, all failed!")
+					//panic("[HEAD ERR] Retry " + fmt.Sprintf("%v", MAX_ERR_RETRY) + " times, all failed!")
+					status = "fail"
+					return
 				}
 
 			} else if panic_err == "[GET ERR]" {
@@ -59,7 +59,9 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 					}
 				}
 				if err != nil {
-					panic("[GET ERR] Retry" + fmt.Sprintf("%v", MAX_ERR_RETRY) + "times, all failed!")
+					//panic("[GET ERR] Retry" + fmt.Sprintf("%v", MAX_ERR_RETRY) + "times, all failed!")
+					status = "fail"
+					return
 				}
 
 			} else {
