@@ -97,7 +97,7 @@ func buildDir() {
 
 func GetLinks(url, save string) (ret []Link, err error) {
 	var tmp []byte
-	FetchAndSave(url, save, true)
+	FetchAndSave(url, save, false)
 
 	if tmp, err = ioutil.ReadFile(save); err != nil {
 		panic(err)
