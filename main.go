@@ -68,10 +68,11 @@ func mirror() {
 					statusOut[1] = statusOut[1] + pkgFile.Name + " [" + s + "]\n"
 
 					//@todo: md5 check
-
+					runtime.Gosched()
 				}
 
 				finish <- statusOut
+				runtime.Gosched()
 			}
 		}(finish, i*total/NUM_GOROUTINE, (i+1)*total/NUM_GOROUTINE)
 	}
