@@ -47,7 +47,7 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 		if !force { //如果不是强制重新下载，则检验修改时间
 			for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
 				if resp, err = http.Head(url); err == nil { //没有出错则跳出重试过程
-					continue
+					break
 				}
 				time.Sleep(RETRY_INTERVAL)
 			}
@@ -73,7 +73,7 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 
 	for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
 		if resp, err = http.Get(url); err == nil {
-			continue
+			break
 		}
 		time.Sleep(RETRY_INTERVAL)
 	}
