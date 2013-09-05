@@ -65,7 +65,7 @@ func mirror() {
 						continue
 					}
 					s, _ := FetchAndSave(url[0], SAVEPATH+PAGEPKG+dir[1], false)
-					statusOut[1] = statusOut[1] + pkgFile.Name + "[" + s + "]\n"
+					statusOut[1] = statusOut[1] + pkgFile.Name + " [" + s + "]\n"
 
 					//@todo: md5 check
 
@@ -82,7 +82,7 @@ func mirror() {
 		fmt.Println(strings.Repeat("=", 50))
 		fmt.Println(" Package: "+statusOut[0], "[", count, "/", total, "]")
 		fmt.Println(strings.Repeat("=", 50))
-		fmt.Println(statusOut[1] + "\n")
+		fmt.Println(statusOut[1])
 	}
 
 	fmt.Println("Finish!")
