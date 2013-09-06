@@ -97,8 +97,11 @@ func mirror() (err error) {
 
 				//下载包的所有版本并校验
 				for _, pkgFile := range pLinks {
-					url := strings.Split(pkgFile.FullUrl, "#md5=") //切分下载url和md5
-					dir := strings.Split(url[0], PAGEPKG)          //获取本地保存路径
+					url := strings.Split(pkgFile.FullUrl, "#md5=")  //切分下载url和md5
+					dir := strings.Split(url[0], PAGEPKG)           //获取本地保存路径
+					if strings.HasPrefix(pkgFile.RawHref, "http") { //跳过外链
+						continue
+					}
 					if len(url) == 1 || len(dir) == 1 {
 						//有些包里面索引页会有包主页链接什么的 如http://e.pypi.python.org/simple/1ee/这里面
 						//这时候跳过这个链接
