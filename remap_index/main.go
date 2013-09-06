@@ -24,8 +24,9 @@ func main() {
 			oldDir := OLD_INDEX_DIR + "/" + pkgName
 			newDir := NEW_INDEX_DIR + "/" + strings.ToLower(pkgName[:1]) + "/" + pkgName
 
-			os.MkdirAll(path.Dir(newDir), 0700)
+			os.MkdirAll(path.Dir(newDir), 0755)
 			//保存到新目录的带首字母小写的子目录中
+			os.RemoveAll(newDir)
 			os.Rename(oldDir, newDir)
 			//然后做软连接回去
 			os.Symlink(newDir, oldDir)
