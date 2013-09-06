@@ -63,7 +63,7 @@ func FetchAndSave(url, to string, force bool) (status string, err error) {
 	}
 
 	for err_retry = 0; err_retry < MAX_ERR_RETRY; err_retry++ {
-		if err = os.MkdirAll(path.Dir(to), 0700); err == nil { //建立层级的文件夹
+		if err = os.MkdirAll(path.Dir(to), 0755); err == nil { //建立层级的文件夹
 			break
 		}
 	}

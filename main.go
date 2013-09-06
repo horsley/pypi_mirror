@@ -147,9 +147,9 @@ func mirror() (err error) {
 }
 
 func buildDir() {
-	os.MkdirAll(SAVEPATH+PAGEIDX, 0700)
-	os.MkdirAll(SAVEPATH+PAGEPKG, 0700)
-	os.MkdirAll(SAVEPATH+PAGESIG, 0700)
+	os.MkdirAll(SAVEPATH+PAGEIDX, 0755)
+	os.MkdirAll(SAVEPATH+PAGEPKG, 0755)
+	os.MkdirAll(SAVEPATH+PAGESIG, 0755)
 }
 
 func GetLinks(url, save string) (ret []Link, err error) {
